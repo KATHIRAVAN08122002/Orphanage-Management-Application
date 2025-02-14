@@ -1,7 +1,9 @@
+// Signup Screen with Enhanced Validation and Keyboard Overflow Fix
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'login_screen.dart';  // Import the LoginScreen
+import 'package:intl/intl.dart';
+import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   @override
@@ -9,108 +11,85 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController mobileController = TextEditingController();
-  final TextEditingController dobController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final nameController = TextEditingController();
+  final phoneController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  DateTime? selectedDate;
 
-  // Function to handle user signup
+  void selectDate(BuildContext context) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => selectedDate = picked);
+  }
+
+  String? validateInput() {
+    if (nameController.text.trim().isEmpty) return 'Name cannot be empty';
+    if (phoneController.text.length != 10) return 'Phone number must be 10 digits';
+    if (!emailController.text.contains('@')) return 'Invalid email format';
+    if (passwordController.text.length < 6) return 'Password must be at least 6 characters';
+    if (passwordController.text != confirmPasswordController.text) return 'Passwords do not match';
+    if (selectedDate == null) return 'Please select your date of birth';
+    return null;
+  }
+
   void signup(BuildContext context) async {
-    // Validate input fields
-    if (nameController.text.isEmpty ||
-        mobileController.text.isEmpty ||
-        dobController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        passwordController.text.isEmpty ||
-        confirmPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill in all fields')),
-      );
+    final error = validateInput();
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
       return;
     }
-
-    if (passwordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Passwords do not match')),
-      );
-      return;
-    }
-
     try {
-      // Create user in Firebase Authentication
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-
-      // Get user ID
-      String userId = userCredential.user!.uid;
-
-      // Store user data in Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'name': nameController.text.trim(),
-        'mobile': mobileController.text.trim(),
-        'dob': dobController.text.trim(),
+        'phone': phoneController.text.trim(),
         'email': emailController.text.trim(),
-        'createdAt': DateTime.now(),
+        'dateOfBirth': DateFormat('yyyy-MM-dd').format(selectedDate!),
       });
-
-      // Navigate to the login page after successful signup
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),  // Navigate to LoginScreen
-      );
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Signup Failed: ${e.toString()}')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Sign Up')),
-      body: Padding(
-        padding: EdgeInsets.all(20),
+      appBar: AppBar(title: Text('Signup')),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(labelText: 'Name'),
+            TextField(controller: nameController, decoration: InputDecoration(labelText: 'Name')),
+            TextField(controller: phoneController, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: 'Phone (10 digits)')),
+            TextFormField(
+              readOnly: true,
+              controller: TextEditingController(
+                text: selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : '',
+              ),
+              decoration: InputDecoration(
+                labelText: 'Date of Birth',
+                suffixIcon: IconButton(icon: Icon(Icons.calendar_today), onPressed: () => selectDate(context)),
+              ),
             ),
-            TextField(
-              controller: mobileController,
-              decoration: InputDecoration(labelText: 'Mobile Number'),
-              keyboardType: TextInputType.phone,
-            ),
-            TextField(
-              controller: dobController,
-              decoration: InputDecoration(labelText: 'Date of Birth'),
-              keyboardType: TextInputType.datetime,
-            ),
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(labelText: 'Email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            TextField(
-              controller: passwordController,
-              decoration: InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            TextField(
-              controller: confirmPasswordController,
-              decoration: InputDecoration(labelText: 'Confirm Password'),
-              obscureText: true,
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () => signup(context),
-              child: Text('Sign Up'),
+            TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email')),
+            TextField(controller: passwordController, decoration: InputDecoration(labelText: 'Password'), obscureText: true),
+            TextField(controller: confirmPasswordController, decoration: InputDecoration(labelText: 'Confirm Password'), obscureText: true),
+            SizedBox(height: 16),
+            ElevatedButton(onPressed: () => signup(context), child: Text('Sign Up')),
+            TextButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen())),
+              child: Text('Already a user? Login now'),
             ),
           ],
         ),
