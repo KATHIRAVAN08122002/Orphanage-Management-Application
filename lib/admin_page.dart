@@ -57,7 +57,7 @@ class _AdminPageState extends State<AdminPage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => OrphanageDetailPage(orphanageData: orphanageData),
+                        builder: (context) => OrphanageDetailPage(orphanageId: orphanage.id),
                       ),
                     );
                   },

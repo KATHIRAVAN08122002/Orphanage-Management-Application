@@ -1,30 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class FeedbackScreen extends StatelessWidget {
+class FeedbackScreen extends StatefulWidget {
+  final String userEmail;
+  const FeedbackScreen({Key? key, required this.userEmail}) : super(key: key);
+
+  @override
+  _FeedbackScreenState createState() => _FeedbackScreenState();
+}
+
+class _FeedbackScreenState extends State<FeedbackScreen> {
+  final _feedbackController = TextEditingController();
+  bool _isSubmitting = false;
+
+  Future<void> _submitFeedback() async {
+    if (_feedbackController.text.trim().isEmpty) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await FirebaseFirestore.instance.collection('feedback').add({
+        'email': widget.userEmail,
+        'feedback': _feedbackController.text.trim(),
+        'timestamp': Timestamp.now(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Feedback submitted successfully!')),
+      );
+
+      _feedbackController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error submitting feedback. Please try again.')),
+      );
+    }
+
+    setState(() {
+      _isSubmitting = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Feedback')),
       body: Padding(
-        padding: EdgeInsets.all(20),
+        padding: EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Fake Feedback',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            TextField(
+              controller: _feedbackController,
+              maxLines: 5,
+              decoration: InputDecoration(
+                labelText: 'Your Feedback',
+                border: OutlineInputBorder(),
+              ),
             ),
-            SizedBox(height: 20),
-            Text(
-              'Thank you for your feedback! We appreciate your time and effort in helping us improve our services. Your feedback is valuable to us.',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 20),
+            SizedBox(height: 10),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context); // Go back to the previous screen
-              },
-              child: Text('Go Back'),
+              onPressed: _isSubmitting ? null : _submitFeedback,
+              child: _isSubmitting ? CircularProgressIndicator() : Text('Submit'),
             ),
           ],
         ),

@@ -21,6 +21,9 @@ class _UploadPageState extends State<UploadPage> {
   final _cityController = TextEditingController();
   final _pincodeController = TextEditingController();
   final _mobileController = TextEditingController();
+  final _latitudeController = TextEditingController();
+  final _longitudeController = TextEditingController();
+  final _aboutController = TextEditingController();
   String _selectedState = 'Tamil Nadu';
   bool _isLoading = false;
   final List<String> _states = ['Tamil Nadu', 'Kerala', 'Karnataka', 'Andhra Pradesh', 'Telangana'];
@@ -49,7 +52,8 @@ class _UploadPageState extends State<UploadPage> {
   }
 
   Future<void> _submitForm() async {
-    if ([_idController, _nameController, _placeController, _flatNoController, _streetController, _cityController, _pincodeController, _mobileController].any((c) => c.text.isEmpty) || _image == null) {
+    if ([_idController, _nameController, _placeController, _flatNoController, _streetController, _cityController, _pincodeController, _mobileController, _latitudeController, _longitudeController, _aboutController]
+        .any((c) => c.text.isEmpty) || _image == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('All fields are required')));
       return;
     }
@@ -68,6 +72,8 @@ class _UploadPageState extends State<UploadPage> {
           'state': _selectedState,
           'pincode': _pincodeController.text,
           'mobile': '+91${_mobileController.text}',
+          'loc': [double.parse(_latitudeController.text), double.parse(_longitudeController.text)],
+          'about': _aboutController.text,
           'image': imageUrl,
           'verified': false,
         });
@@ -78,12 +84,13 @@ class _UploadPageState extends State<UploadPage> {
     }
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, TextInputType type) {
+  Widget _buildTextField(TextEditingController controller, String label, TextInputType type, {int? maxLines = 1}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextField(
         controller: controller,
         keyboardType: type,
+        maxLines: maxLines,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(),
@@ -125,6 +132,9 @@ class _UploadPageState extends State<UploadPage> {
                 ),
                 _buildTextField(_pincodeController, 'Pincode (6 digits)', TextInputType.number),
                 _buildTextField(_mobileController, 'Mobile (+91)', TextInputType.phone),
+                _buildTextField(_latitudeController, 'Latitude', TextInputType.number),
+                _buildTextField(_longitudeController, 'Longitude', TextInputType.number),
+                _buildTextField(_aboutController, 'About the Orphanage', TextInputType.multiline, maxLines: 5),
                 SizedBox(height: 10),
                 ElevatedButton.icon(
                   onPressed: _pickImage,

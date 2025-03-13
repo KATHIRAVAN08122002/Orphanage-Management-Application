@@ -33,9 +33,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Profile"),
-        centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        title: Text("Profile", style: TextStyle(fontWeight: FontWeight.bold)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade700, Colors.teal.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        elevation: 5,
       ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _fetchUserData(),
@@ -53,7 +61,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return SingleChildScrollView(
               padding: EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
                     decoration: BoxDecoration(
@@ -71,8 +79,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Name: ${userData['name'] ?? 'N/A'}',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text('Username: ${userData['name'] ?? 'N/A'}',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple.shade700)),
+
                         SizedBox(height: 8),
                         Text('Phone: +91 ${userData['phone'] ?? 'N/A'}',
                             style: TextStyle(fontSize: 18)),
@@ -110,6 +119,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: ListTile(
+                          leading: Icon(
+                            donationType.toLowerCase() == 'food' ? Icons.fastfood : Icons.volunteer_activism,
+                            color: Colors.deepPurple,
+                            size: 30,
+                          ),
                           contentPadding: EdgeInsets.all(16),
                           title: Text(
                             'Type: $donationType',

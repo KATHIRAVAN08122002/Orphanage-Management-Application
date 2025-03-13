@@ -56,7 +56,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'phone': phoneController.text.trim(),
         'email': emailController.text.trim(),
         'dateOfBirth': DateFormat('yyyy-MM-dd').format(selectedDate!),
-        'donations': []  // Initialize an empty array for future donations
+        'donations': []
       });
 
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
@@ -68,35 +68,111 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Signup')),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: nameController, decoration: InputDecoration(labelText: 'Name')),
-            TextField(controller: phoneController, keyboardType: TextInputType.phone, decoration: InputDecoration(labelText: 'Phone (10 digits)')),
-            TextFormField(
-              readOnly: true,
-              controller: TextEditingController(
-                text: selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : '',
+      backgroundColor: Colors.white,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Logo
+
+              // App Name
+
+
+              // Signup Card
+              Card(
+                elevation: 6,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildTextField(nameController, 'Name', Icons.person),
+                      _buildTextField(phoneController, 'Phone (10 digits)', Icons.phone, isNumber: true),
+                      _buildDateField(context),
+                      _buildTextField(emailController, 'Email', Icons.email),
+                      _buildTextField(passwordController, 'Password', Icons.lock, isPassword: true),
+                      _buildTextField(confirmPasswordController, 'Confirm Password', Icons.lock, isPassword: true),
+                      SizedBox(height: 20),
+
+                      // Signup Button
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => signup(context),
+                        child: SizedBox(
+                          width: double.infinity,
+                          child: Text(
+                            'Sign Up',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 18),
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+
+                      // Login Redirect
+                      TextButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => LoginScreen()),
+                        ),
+                        child: Text(
+                          'Already a user? Login now',
+                          style: TextStyle(fontSize: 16, color: Colors.teal),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              decoration: InputDecoration(
-                labelText: 'Date of Birth',
-                suffixIcon: IconButton(icon: Icon(Icons.calendar_today), onPressed: () => selectDate(context)),
-              ),
-            ),
-            TextField(controller: emailController, decoration: InputDecoration(labelText: 'Email')),
-            TextField(controller: passwordController, decoration: InputDecoration(labelText: 'Password'), obscureText: true),
-            TextField(controller: confirmPasswordController, decoration: InputDecoration(labelText: 'Confirm Password'), obscureText: true),
-            SizedBox(height: 16),
-            ElevatedButton(onPressed: () => signup(context), child: Text('Sign Up')),
-            TextButton(
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => LoginScreen())),
-              child: Text('Already a user? Login now'),
-            ),
-          ],
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isPassword = false, bool isNumber = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword,
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.teal),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.teal, width: 2)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateField(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: TextFormField(
+        readOnly: true,
+        controller: TextEditingController(
+          text: selectedDate != null ? DateFormat('yyyy-MM-dd').format(selectedDate!) : '',
+        ),
+        decoration: InputDecoration(
+          labelText: 'Date of Birth',
+          prefixIcon: Icon(Icons.calendar_today, color: Colors.teal),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.teal, width: 2)),
+        ),
+        onTap: () => selectDate(context),
       ),
     );
   }

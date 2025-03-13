@@ -13,7 +13,7 @@ class _NearbyOrphanagesPageState extends State<NearbyOrphanagesPage> {
   LatLng? _currentLocation;
   final MapController _mapController = MapController();
   List<Marker> orphanageMarkers = [];
-  bool _mapRendered = false; // Track if map is rendered
+  bool _mapRendered = false;
 
   @override
   void initState() {
@@ -40,18 +40,13 @@ class _NearbyOrphanagesPageState extends State<NearbyOrphanagesPage> {
         _currentLocation = LatLng(position.latitude, position.longitude);
       });
 
-      print("✅ Current Location: $_currentLocation");
-
-      // Wait for the map to be ready before moving the camera
       Future.delayed(Duration(milliseconds: 500), () {
         if (mounted) {
           _mapController.move(_currentLocation!, 15.0);
-        } else {
-          print("⚠️ Widget is not mounted, skipping map movement");
         }
       });
 
-
+      _fetchNearbyOrphanages(); // Fetch orphanages after location
     } catch (e) {
       print("❌ Error getting location: $e");
     }
@@ -66,12 +61,9 @@ class _NearbyOrphanagesPageState extends State<NearbyOrphanagesPage> {
     List<Marker> markers = [];
 
     for (var doc in orphanagesSnapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>?; // Safe casting
+      var data = doc.data() as Map<String, dynamic>?;
 
-      if (data == null || !data.containsKey('loc')) {
-        print("⚠️ Skipping orphanage ${doc.id} - 'loc' field is missing");
-        continue; // Skip invalid documents
-      }
+      if (data == null || !data.containsKey('loc')) continue;
 
       var locationData = data['loc'];
       if (locationData is List && locationData.length == 2) {
@@ -86,86 +78,114 @@ class _NearbyOrphanagesPageState extends State<NearbyOrphanagesPage> {
           orphanageLng,
         );
 
-        if (distance <= 5000) {
+        if (distance <= 100000) {
           markers.add(
             Marker(
               point: LatLng(orphanageLat, orphanageLng),
-              width: 120, // Increased width for better spacing
-              height: 60, // Increased height to prevent overflow
+              width: 140,
+              height: 80,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.location_on, color: Colors.blue, size: 40), // Blue location icon
-                  SizedBox(height: 2), // Small space between icon and text
+                  Icon(Icons.location_on, color: Colors.blue, size: 40),
+                  SizedBox(height: 4),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    width: 120,
+                    padding: EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.9), // Slight transparency for better readability
+                      color: Colors.white.withOpacity(0.9),
                       borderRadius: BorderRadius.circular(8),
-                      boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 2)],
+                      boxShadow: [
+                        BoxShadow(color: Colors.black26, blurRadius: 3)
+                      ],
                     ),
                     child: Text(
-                      doc['title'], // Display orphanage title
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis, // Prevents overflow issue
+                      title,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ],
               ),
             ),
-
-
-
           );
         }
-      } else {
-        print("⚠️ Orphanage ${doc.id} has an invalid 'loc' format");
       }
     }
 
     setState(() {
       orphanageMarkers = markers;
     });
-
-    print("✅ Total orphanages found within 5km: ${orphanageMarkers.length}");
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Nearby Orphanages")),
-      body: _currentLocation == null
-          ? Center(child: CircularProgressIndicator())
-          : FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: _currentLocation!,
-          initialZoom: 15.0,
-          onMapReady: () {
-            if (!_mapRendered) {
-              setState(() {
-                _mapRendered = true;
-              });
-              print("✅ Map is now rendered. Fetching orphanages...");
-              _fetchNearbyOrphanages(); // Fetch orphanages when map is ready
-            }
-          },
-        ),
-        children: [
-          TileLayer(
-            urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      appBar: AppBar(
+        title: Text("Nearby Orphanages", style: TextStyle(fontWeight: FontWeight.bold)),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade700, Colors.teal.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
           ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: _currentLocation!,
-                width: 40,
-                height: 40,
-                child: Icon(Icons.location_pin, color: Colors.red, size: 40), // User location
+        ),
+        elevation: 5,
+      ),
+      body: Stack(
+        children: [
+          _currentLocation == null
+              ? Center(child: CircularProgressIndicator())
+              : FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _currentLocation!,
+              initialZoom: 15.0,
+              onMapReady: () {
+                if (!_mapRendered) {
+                  setState(() => _mapRendered = true);
+                  _fetchNearbyOrphanages();
+                }
+              },
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
               ),
-              ...orphanageMarkers, // Orphanage markers
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _currentLocation!,
+                    width: 40,
+                    height: 40,
+                    child: Icon(Icons.location_pin, color: Colors.red, size: 40),
+                  ),
+                  ...orphanageMarkers,
+                ],
+              ),
             ],
+          ),
+
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton(
+              onPressed: () {
+                if (_currentLocation != null) {
+                  _mapController.move(_currentLocation!, 15.0);
+                }
+              },
+              backgroundColor: Colors.red,
+              child: Icon(Icons.my_location, color: Colors.white),
+            ),
           ),
         ],
       ),
