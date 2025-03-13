@@ -1,4 +1,3 @@
-// Enhanced Upload Page with Additional Fields and Responsive UI
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -58,10 +57,10 @@ class _UploadPageState extends State<UploadPage> {
     try {
       String? imageUrl = await uploadImageToCloudinary(_image!);
       if (imageUrl != null) {
-        await FirebaseFirestore.instance.collection('orphanages').add({
+        await FirebaseFirestore.instance.collection('verification').add({
           'id': _idController.text,
           'name': _nameController.text,
-          'title':_nameController.text,
+          'title': _nameController.text,
           'place': _placeController.text,
           'flat_no': _flatNoController.text,
           'street': _streetController.text,
@@ -70,8 +69,9 @@ class _UploadPageState extends State<UploadPage> {
           'pincode': _pincodeController.text,
           'mobile': '+91${_mobileController.text}',
           'image': imageUrl,
+          'verified': false,
         });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Uploaded Successfully!')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Submitted for Verification!')));
       }
     } finally {
       setState(() => _isLoading = false);
@@ -84,7 +84,12 @@ class _UploadPageState extends State<UploadPage> {
       child: TextField(
         controller: controller,
         keyboardType: type,
-        decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(),
+          filled: true,
+          fillColor: Colors.grey[200],
+        ),
       ),
     );
   }
@@ -92,31 +97,62 @@ class _UploadPageState extends State<UploadPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Upload Orphanage Info')),
+      appBar: AppBar(
+        title: Text('Upload Orphanage Info'),
+        backgroundColor: Colors.teal,
+      ),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildTextField(_idController, 'Orphanage ID', TextInputType.text),
-            _buildTextField(_nameController, 'Orphanage Name', TextInputType.text),
-            _buildTextField(_placeController, 'Place', TextInputType.text),
-            _buildTextField(_flatNoController, 'Flat No', TextInputType.text),
-            _buildTextField(_streetController, 'Street', TextInputType.text),
-            _buildTextField(_cityController, 'City', TextInputType.text),
-            DropdownButtonFormField(
-              value: _selectedState,
-              items: _states.map((state) => DropdownMenuItem(value: state, child: Text(state))).toList(),
-              onChanged: (value) => setState(() => _selectedState = value as String),
-              decoration: InputDecoration(labelText: 'State', border: OutlineInputBorder()),
+        child: Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildTextField(_idController, 'Orphanage ID', TextInputType.text),
+                _buildTextField(_nameController, 'Orphanage Name', TextInputType.text),
+                _buildTextField(_placeController, 'Place', TextInputType.text),
+                _buildTextField(_flatNoController, 'Flat No', TextInputType.text),
+                _buildTextField(_streetController, 'Street', TextInputType.text),
+                _buildTextField(_cityController, 'City', TextInputType.text),
+                DropdownButtonFormField(
+                  value: _selectedState,
+                  items: _states.map((state) => DropdownMenuItem(value: state, child: Text(state))).toList(),
+                  onChanged: (value) => setState(() => _selectedState = value as String),
+                  decoration: InputDecoration(labelText: 'State', border: OutlineInputBorder()),
+                ),
+                _buildTextField(_pincodeController, 'Pincode (6 digits)', TextInputType.number),
+                _buildTextField(_mobileController, 'Mobile (+91)', TextInputType.phone),
+                SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _pickImage,
+                  icon: Icon(Icons.image),
+                  label: Text('Pick Image'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+                ),
+                if (_image != null) Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.file(_image!, height: 150, width: double.infinity, fit: BoxFit.cover),
+                  ),
+                ),
+                SizedBox(height: 20),
+                _isLoading
+                    ? Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                  onPressed: _submitForm,
+                  child: Text('Submit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.teal,
+                    padding: EdgeInsets.symmetric(vertical: 15),
+                  ),
+                ),
+              ],
             ),
-            _buildTextField(_pincodeController, 'Pincode (6 digits)', TextInputType.number),
-            _buildTextField(_mobileController, 'Mobile (+91)', TextInputType.phone),
-            SizedBox(height: 10),
-            ElevatedButton(onPressed: _pickImage, child: Text('Pick Image')),
-            if (_image != null) Image.file(_image!, height: 150),
-            SizedBox(height: 20),
-            _isLoading ? CircularProgressIndicator() : ElevatedButton(onPressed: _submitForm, child: Text('Submit')),
-          ],
+          ),
         ),
       ),
     );

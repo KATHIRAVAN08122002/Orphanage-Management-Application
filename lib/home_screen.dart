@@ -1,12 +1,18 @@
-// Home Screen with Navigation to Orphanage Detail
+import 'package:demo/nearby_orphanage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'profile_screen.dart';
 import 'feedback_screen.dart';
 import 'orphanage_detail_screen.dart';
 import 'upload_screen.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  final String userEmail;
+
+  const HomeScreen({Key? key, required this.userEmail}) : super(key: key);
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -15,11 +21,18 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   // Pages for bottom navigation
-  final List<Widget> _pages = [
-    HomeContent(),    // Home Page Content
-    ProfileScreen(),  // Profile Page
-    UploadPage(),   // Upload Page
-  ];
+  late List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomeContent(), // Home Page Content
+      ProfileScreen(userEmail: widget.userEmail), // ✅ Pass userEmail to Profile
+      NearbyOrphanagesPage(),
+      UploadPage(), // Upload Page
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -35,11 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           PopupMenuButton<String>(
             onSelected: _onMenuItemSelected,
-            itemBuilder: (_) => {'About', 'Contact', 'Feedback'}
-                .map((choice) => PopupMenuItem(
-              value: choice.toLowerCase(),
-              child: Text(choice),
-            ))
+            itemBuilder: (_) => {'About', 'Contact', 'Feedback', 'Logout'}
+                .map((choice) => PopupMenuItem(value: choice.toLowerCase(), child: Text(choice)))
                 .toList(),
           ),
         ],
@@ -48,9 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        items: [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.account_circle), label: 'Profile'),
+          BottomNavigationBarItem(icon: Icon(Icons.map), label: "Nearby"),
           BottomNavigationBarItem(icon: Icon(Icons.upload_file), label: 'Upload'),
         ],
       ),
@@ -59,29 +72,40 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onMenuItemSelected(String value) {
     if (value == 'feedback') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => FeedbackScreen()),
-      );
+      Navigator.push(context, MaterialPageRoute(builder: (_) => FeedbackScreen()));
+    } else if (value == 'logout') {
+      _logoutUser();
     } else {
       showDialog(
         context: context,
         builder: (_) => AlertDialog(
-          title: Text(value),
-          content: Text('This is a sample $value page.'),
+          title: Text(value.capitalize()),
+          content: Text('This is the $value page. More details coming soon.'),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('OK'),
-            ),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text('OK')),
           ],
         ),
       );
     }
   }
+
+  // Logout Function
+  Future<void> _logoutUser() async {
+    try {
+      await FirebaseAuth.instance.signOut();
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Logout Failed: $e')));
+    }
+  }
 }
 
-// Separate Home Content Widget for Cleaner Code
+// ✅ Extension to capitalize first letter
+extension StringExtension on String {
+  String capitalize() => "${this[0].toUpperCase()}${substring(1)}";
+}
+
+// Home Content Widget
 class HomeContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -91,8 +115,11 @@ class HomeContent extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
         }
-        if (!snapshot.hasData) {
-          return Center(child: Text('No data available.'));
+        if (snapshot.hasError) {
+          return Center(child: Text('Error loading data.'));
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return Center(child: Text('No orphanages available.'));
         }
 
         final orphanages = snapshot.data!.docs;
@@ -100,6 +127,7 @@ class HomeContent extends StatelessWidget {
           itemCount: orphanages.length,
           itemBuilder: (context, index) {
             final orphanage = orphanages[index];
+
             return GestureDetector(
               onTap: () => Navigator.push(
                 context,
@@ -127,10 +155,7 @@ class HomeContent extends StatelessWidget {
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         '${orphanage['title']}, ${orphanage['place']}',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ],

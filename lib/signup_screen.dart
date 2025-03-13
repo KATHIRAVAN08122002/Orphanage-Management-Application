@@ -1,4 +1,3 @@
-// Signup Screen with Enhanced Validation and Keyboard Overflow Fix
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -49,12 +48,17 @@ class _SignupScreenState extends State<SignupScreen> {
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+      String userId = userCredential.user!.uid;
+
+      await FirebaseFirestore.instance.collection('users').doc(userId).set({
+        'userId': userId,
         'name': nameController.text.trim(),
         'phone': phoneController.text.trim(),
         'email': emailController.text.trim(),
         'dateOfBirth': DateFormat('yyyy-MM-dd').format(selectedDate!),
+        'donations': []  // Initialize an empty array for future donations
       });
+
       Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginScreen()));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Signup Failed: ${e.toString()}')));

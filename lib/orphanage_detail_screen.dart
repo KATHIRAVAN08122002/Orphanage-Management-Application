@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:demo/donate_food_page.dart';
+import 'package:demo/donate_money_page.dart';
+import 'package:demo/appointment_screen.dart';
+
 
 class OrphanageDetailScreen extends StatelessWidget {
   final String title;
@@ -53,6 +57,38 @@ class OrphanageDetailScreen extends StatelessWidget {
                     'You can add further information like contact details, the number of children housed, and how people can help.',
                 style: TextStyle(fontSize: 16),
               ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DonateMoneyPage(title: title),
+                    ),
+                  ),
+                  child: Text('Donate Money'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DonateFoodPage(orphanageTitle: title),
+                    ),
+                  ),
+                  child: Text('Donate Food'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AppointmentScreen(orphanageTitle: title),
+                    ),
+                  ),
+                  child: Text('Book an Appointment'),
+                ),
+              ],
             ),
           ],
         ),
